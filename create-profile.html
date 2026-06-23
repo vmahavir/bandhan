@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bandhan - Create Profile</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+    <nav class="top-nav">
+        <div class="brand">
+            <span>बंधन</span>
+            <span style="font-weight: normal; font-size: 14px; opacity: 0.8;">Create Profile</span>
+        </div>
+        <div class="nav-actions">
+            <button onclick="window.location.href='dashboard.html'">🏠</button>
+            <button onclick="logout()">🚪</button>
+        </div>
+    </nav>
+    
+    <div class="container" style="max-width: 600px;">
+        <h2 style="text-align: center; margin-bottom: 16px;">Complete Your Profile</h2>
+        <p style="text-align: center; color: var(--text-secondary); margin-bottom: 20px;">
+            Fill in your details to create your matrimony profile
+        </p>
+        
+        <div id="profileForm">
+            <!-- Basic Details -->
+            <div class="card">
+                <h4 style="margin-bottom: 12px;">Basic Details</h4>
+                
+                <div class="form-group">
+                    <label>Gender *</label>
+                    <select id="gender" class="form-control">
+                        <option value="">Select Gender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>First Name *</label>
+                    <input type="text" id="firstName" class="form-control" placeholder="First name">
+                </div>
+                
+                <div class="form-group">
+                    <label>Last Name</label>
+                    <input type="text" id="lastName" class="form-control" placeholder="Last name">
+                </div>
+                
+                <div class="form-group">
+                    <label>Date of Birth</label>
+                    <input type="date" id="dob" class="form-control">
+                </div>
+                
+                <div class="form-group">
+                    <label>Age *</label>
+                    <input type="number" id="age" class="form-control" placeholder="Age">
+                </div>
+                
+                <div class="form-group">
+                    <label>Height (cm)</label>
+                    <input type="number" id="height" class="form-control" placeholder="Height in cm">
+                </div>
+                
+                <div class="form-group">
+                    <label>Weight (kg)</label>
+                    <input type="number" id="weight" class="form-control" placeholder="Weight in kg">
+                </div>
+                
+                <div class="form-group">
+                    <label>Marital Status</label>
+                    <select id="maritalStatus" class="form-control">
+                        <option value="Never Married">Never Married</option>
+                        <option value="Divorced">Divorced</option>
+                        <option value="Widowed">Widowed</option>
+                        <option value="Separated">Separated</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Mother Tongue</label>
+                    <select id="motherTongue" class="form-control">
+                        <option value="Marathi">Marathi</option>
+                        <option value="Hindi">Hindi</option>
+                        <option value="English">English</option>
+                        <option value="Tamil">Tamil</option>
+                        <option value="Telugu">Telugu</option>
+                        <option value="Kannada">Kannada</option>
+                        <option value="Malayalam">Malayalam</option>
+                        <option value="Bengali">Bengali</option>
+                        <option value="Gujarati">Gujarati</option>
+                        <option value="Punjabi">Punjabi</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Community *</label>
+                    <input type="text" id="community" class="form-control" placeholder="e.g., Brahmin, Maratha, etc.">
+                </div>
+                
+                <div class="form-group">
+                    <label>Sub Community</label>
+                    <input type="text" id="subCommunity" class="form-control" placeholder="Sub community">
+                </div>
+                
+                <div class="form-group">
+                    <label>City *</label>
+                    <input type="text" id="city" class="form-control" placeholder="City">
+                </div>
+                
+                <div class="form-group">
+                    <label>State</label>
+                    <select id="state" class="form-control">
+                        <option value="Maharashtra">Maharashtra</option>
+                        <option value="Gujarat">Gujarat</option>
+                        <option value="Rajasthan">Rajasthan</option>
+                        <option value="Uttar Pradesh">Uttar Pradesh</option>
+                        <option value="Tamil Nadu">Tamil Nadu</option>
+                        <option value="Karnataka">Karnataka</option>
+                        <option value="Andhra Pradesh">Andhra Pradesh</option>
+                        <option value="Telangana">Telangana</option>
+                        <option value="West Bengal">West Bengal</option>
+                        <option value="Delhi">Delhi</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Education -->
+            <div class="card">
+                <h4 style="margin-bottom: 12px;">Education</h4>
+                
+                <div class="form-group">
+                    <label>Highest Qualification *</label>
+                    <input type="text" id="education" class="form-control" placeholder="e.g., B.E., M.Sc., Ph.D.">
+                </div>
+                
+                <div class="form-group">
+                    <label>Specialization</label>
+                    <input type="text" id="specialization" class="form-control" placeholder="e.g., Computer Science, Finance">
+                </div>
+                
+                <div class="form-group">
+                    <label>College/University</label>
+                    <input type="text" id="college" class="form-control" placeholder="College name">
+                </div>
+            </div>
+            
+            <!-- Career -->
+            <div class="card">
+                <h4 style="margin-bottom: 12px;">Career</h4>
+                
+                <div class="form-group">
+                    <label>Occupation *</label>
+                    <input type="text" id="occupation" class="form-control" placeholder="e.g., Software Engineer, Doctor">
+                </div>
+                
+                <div class="form-group">
+                    <label>Company</label>
+                    <input type="text" id="company" class="form-control" placeholder="Company name">
+                </div>
+                
+                <div class="form-group">
+                    <label>Job Type</label>
+                    <select id="jobType" class="form-control">
+                        <option value="Private">Private</option>
+                        <option value="Government">Government</option>
+                        <option value="Self Employed">Self Employed</option>
+                        <option value="Business">Business</option>
+                        <option value="Freelance">Freelance</option>
+                        <option value="Student">Student</option>
+                        <option value="Not Working">Not Working</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Annual Income (LPA)</label>
+                    <input type="text" id="annualIncome" class="form-control" placeholder="e.g., 5 LPA">
+                </div>
+                
+                <div class="form-group">
+                    <label>Work Location</label>
+                    <input type="text" id="workLocation" class="form-control" placeholder="City where you work">
+                </div>
+            </div>
+            
+            <!-- Family Details -->
+            <div class="card">
+                <h4 style="margin-bottom: 12px;">Family Details</h4>
+                
+                <div class="form-group">
+                    <label>Family Type</label>
+                    <select id="familyType" class="form-control">
+                        <option value="Joint">Joint</option>
+                        <option value="Nuclear">Nuclear</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Family Status</label>
+                    <select id="familyStatus" class="form-control">
+                        <option value="Middle Class">Middle Class</option>
+                        <option value="Upper Middle Class">Upper Middle Class</option>
+                        <option value="Upper Class">Upper Class</option>
+                        <option value="Lower Middle Class">Lower Middle Class</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Father's Name</label>
+                    <input type="text" id="fatherName" class="form-control" placeholder="Father's name">
+                </div>
+                
+                <div class="form-group">
+                    <label>Father's Occupation</label>
+                    <input type="text" id="fatherOccupation" class="form-control" placeholder="Father's occupation">
+                </div>
+                
+                <div class="form-group">
+                    <label>Mother's Name</label>
+                    <input type="text" id="motherName" class="form-control" placeholder="Mother's name">
+                </div>
+                
+                <div class="form-group">
+                    <label>Mother's Occupation</label>
+                    <input type="text" id="motherOccupation" class="form-control" placeholder="Mother's occupation">
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <div class="form-group">
+                        <label>Brothers</label>
+                        <input type="number" id="brothers" class="form-control" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Sisters</label>
+                        <input type="number" id="sisters" class="form-control" value="0">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Native Place</label>
+                    <input type="text" id="nativePlace" class="form-control" placeholder="Native place">
+                </div>
+            </div>
+            
+            <!-- Partner Preferences -->
+            <div class="card">
+                <h4 style="margin-bottom: 12px;">Partner Preferences</h4>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <div class="form-group">
+                        <label>Age From</label>
+                        <input type="number" id="expectedAgeFrom" class="form-control" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Age To</label>
+                        <input type="number" id="expectedAgeTo" class="form-control" value="0">
+                    </div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <div class="form-group">
+                        <label>Height From (cm)</label>
+                        <input type="number" id="expectedHeightFrom" class="form-control" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Height To (cm)</label>
+                        <input type="number" id="expectedHeightTo" class="form-control" value="0">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Preferred Education (comma separated)</label>
+                    <input type="text" id="preferredEducation" class="form-control" placeholder="e.g., B.E., M.Sc.">
+                </div>
+                
+                <div class="form-group">
+                    <label>Preferred Cities (comma separated)</label>
+                    <input type="text" id="preferredCities" class="form-control" placeholder="e.g., Mumbai, Pune">
+                </div>
+                
+                <div class="form-group">
+                    <label>Preferred Occupations (comma separated)</label>
+                    <input type="text" id="preferredOccupations" class="form-control" placeholder="e.g., Engineer, Doctor">
+                </div>
+                
+                <div class="form-group">
+                    <label>Income Expectation</label>
+                    <input type="text" id="incomeExpectation" class="form-control" placeholder="e.g., 5 LPA">
+                </div>
+                
+                <div class="form-group">
+                    <label>Accept Divorce</label>
+                    <select id="acceptDivorce" class="form-control">
+                        <option value="No">No</option>
+                        <option value="Yes">Yes</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Horoscope -->
+            <div class="card">
+                <h4 style="margin-bottom: 12px;">Horoscope (Optional)</h4>
+                
+                <div class="form-group">
+                    <label>Rashi</label>
+                    <input type="text" id="rashi" class="form-control" placeholder="Rashi">
+                </div>
+                
+                <div class="form-group">
+                    <label>Nakshatra</label>
+                    <input type="text" id="nakshatra" class="form-control" placeholder="Nakshatra">
+                </div>
+                
+                <div class="form-group">
+                    <label>Mangal</label>
+                    <input type="text" id="mangal" class="form-control" placeholder="Mangal">
+                </div>
+            </div>
+            
+            <!-- Contact -->
+            <div class="card">
+                <h4 style="margin-bottom: 12px;">Contact</h4>
+                
+                <div class="form-group">
+                    <label>Phone Number</label>
+                    <input type="tel" id="phone" class="form-control" placeholder="Phone number">
+                </div>
+            </div>
+            
+            <div id="formError" style="color: var(--error); font-size: 14px; margin: 12px 0; display: none;"></div>
+            
+            <button id="createProfileBtn" class="btn btn-primary" style="width: 100%; padding: 14px; font-size: 16px;">
+                Create Profile
+            </button>
+        </div>
+    </div>
+    
+    <script src="js/firebase-config.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        function initCreateProfilePage() {
+            const user = auth.currentUser;
+            if (!user) {
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            const btn = document.getElementById('createProfileBtn');
+            const errorDiv = document.getElementById('formError');
+            
+            btn.addEventListener('click', async function() {
+                errorDiv.style.display = 'none';
+                
+                // Gather data
+                const gender = document.getElementById('gender').value;
+                const firstName = document.getElementById('firstName').value.trim();
+                const lastName = document.getElementById('lastName').value.trim();
+                const dob = document.getElementById('dob').value;
+                const age = parseInt(document.getElementById('age').value);
+                const height = parseInt(document.getElementById('height').value) || 0;
+                const weight = parseInt(document.getElementById('weight').value) || 0;
+                const maritalStatus = document.getElementById('maritalStatus').value;
+                const motherTongue = document.getElementById('motherTongue').value;
+                const community = document.getElementById('community').value.trim();
+                const subCommunity = document.getElementById('subCommunity').value.trim();
+                const city = document.getElementById('city').value.trim();
+                const state = document.getElementById('state').value;
+                
+                const education = document.getElementById('education').value.trim();
+                const specialization = document.getElementById('specialization').value.trim();
+                const college = document.getElementById('college').value.trim();
+                
+                const occupation = document.getElementById('occupation').value.trim();
+                const company = document.getElementById('company').value.trim();
+                const jobType = document.getElementById('jobType').value;
+                const annualIncome = document.getElementById('annualIncome').value.trim();
+                const workLocation = document.getElementById('workLocation').value.trim();
+                
+                const familyType = document.getElementById('familyType').value;
+                const familyStatus = document.getElementById('familyStatus').value;
+                const fatherName = document.getElementById('fatherName').value.trim();
+                const fatherOccupation = document.getElementById('fatherOccupation').value.trim();
+                const motherName = document.getElementById('motherName').value.trim();
+                const motherOccupation = document.getElementById('motherOccupation').value.trim();
+                const brothers = parseInt(document.getElementById('brothers').value) || 0;
+                const sisters = parseInt(document.getElementById('sisters').value) || 0;
+                const nativePlace = document.getElementById('nativePlace').value.trim();
+                
+                const expectedAgeFrom = parseInt(document.getElementById('expectedAgeFrom').value) || 0;
+                const expectedAgeTo = parseInt(document.getElementById('expectedAgeTo').value) || 0;
+                const expectedHeightFrom = parseInt(document.getElementById('expectedHeightFrom').value) || 0;
+                const expectedHeightTo = parseInt(document.getElementById('expectedHeightTo').value) || 0;
+                const preferredEducation = document.getElementById('preferredEducation').value.split(',').map(s => s.trim()).filter(Boolean);
+                const preferredCities = document.getElementById('preferredCities').value.split(',').map(s => s.trim()).filter(Boolean);
+                const preferredOccupations = document.getElementById('preferredOccupations').value.split(',').map(s => s.trim()).filter(Boolean);
+                const incomeExpectation = document.getElementById('incomeExpectation').value.trim();
+                const acceptDivorce = document.getElementById('acceptDivorce').value;
+                
+                const rashi = document.getElementById('rashi').value.trim();
+                const nakshatra = document.getElementById('nakshatra').value.trim();
+                const mangal = document.getElementById('mangal').value.trim();
+                
+                const phone = document.getElementById('phone').value.trim();
+                
+                // Validation
+                if (!gender) { errorDiv.textContent = 'Please select gender'; errorDiv.style.display = 'block'; return; }
+                if (!firstName) { errorDiv.textContent = 'Please enter first name'; errorDiv.style.display = 'block'; return; }
+                if (!age || age < 18) { errorDiv.textContent = 'Please enter a valid age (18+)'; errorDiv.style.display = 'block'; return; }
+                if (!community) { errorDiv.textContent = 'Please enter community'; errorDiv.style.display = 'block'; return; }
+                if (!city) { errorDiv.textContent = 'Please enter city'; errorDiv.style.display = 'block'; return; }
+                if (!education) { errorDiv.textContent = 'Please enter education'; errorDiv.style.display = 'block'; return; }
+                if (!occupation) { errorDiv.textContent = 'Please enter occupation'; errorDiv.style.display = 'block'; return; }
+                
+                btn.disabled = true;
+                btn.textContent = 'Creating Profile...';
+                
+                try {
+                    const emailKey = getCurrentUserEmailKey();
+                    const email = user.email;
+                    
+                    const profileData = {
+                        'Profile For': 'Self',
+                        'Gender': gender,
+                        'First Name': firstName,
+                        'Last Name': lastName,
+                        'Date of Birth': dob,
+                        'Age': age,
+                        'Height (cm)': height,
+                        'Weight (kg)': weight,
+                        'Marital Status': maritalStatus,
+                        'Mother Tongue': motherTongue,
+                        'Community': community,
+                        'Sub Community': subCommunity,
+                        'City': city,
+                        'State': state,
+                        'Country': 'India',
+                        'Profile Status': 'PENDING',
+                        'Education': education,
+                        'Specialization': specialization,
+                        'College': college,
+                        'Occupation': occupation,
+                        'Company': company,
+                        'Job Type': jobType,
+                        'Annual Income': annualIncome,
+                        'Work Location': workLocation,
+                        'Profile Photo': '',
+                        'galleryImages': [],
+                        'Family Type': familyType,
+                        'Family Status': familyStatus,
+                        'Father Name': fatherName,
+                        'Father Occupation': fatherOccupation,
+                        'Mother Name': motherName,
+                        'Mother Occupation': motherOccupation,
+                        'Brothers': brothers,
+                        'Sisters': sisters,
+                        'Native Place': nativePlace,
+                        'Expected Age From': expectedAgeFrom,
+                        'Expected Age To': expectedAgeTo,
+                        'Expected Height From (cm)': expectedHeightFrom,
+                        'Expected Height To (cm)': expectedHeightTo,
+                        'Preferred Education': preferredEducation,
+                        'Preferred Cities': preferredCities,
+                        'Preferred Occupations': preferredOccupations,
+                        'Income Expectation': incomeExpectation,
+                        'Accept Divorce': acceptDivorce,
+                        'Rashi': rashi,
+                        'Nakshatra': nakshatra,
+                        'Mangal': mangal,
+                        'Phone': phone,
+                        'email': email,
+                        'createdAt': Date.now(),
+                        'updatedAt': Date.now()
+                    };
+                    
+                    await db.collection('profiles').doc(emailKey).set(profileData);
+                    
+                    // Update user document
+                    await db.collection('users').doc(emailKey).update({
+                        hasProfile: true
+                    });
+                    
+                    showToast('✅ Profile created successfully! Waiting for admin approval.', 'success');
+                    window.location.href = 'dashboard.html';
+                } catch (error) {
+                    errorDiv.textContent = error.message || 'Failed to create profile';
+                    errorDiv.style.display = 'block';
+                    btn.disabled = false;
+                    btn.textContent = 'Create Profile';
+                }
+            });
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            if (auth.currentUser) {
+                initCreateProfilePage();
+            }
+        });
+    </script>
+</body>
+</html>

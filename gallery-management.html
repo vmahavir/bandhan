@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bandhan - Gallery Management</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://upload-widget.cloudinary.com/latest/global.js"></script>
+</head>
+<body>
+    <nav class="top-nav">
+        <div class="brand">
+            <span>बंधन</span>
+            <span style="font-weight: normal; font-size: 14px; opacity: 0.8;">Gallery</span>
+        </div>
+        <div class="nav-actions">
+            <button onclick="window.history.back()">←</button>
+            <button onclick="logout()">🚪</button>
+        </div>
+    </nav>
+    
+    <div class="container" style="max-width: 800px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h3>📸 Gallery Management</h3>
+            <div>
+                <span id="photoCount">0 / 6</span>
+                <button id="uploadBtn" class="btn btn-primary" style="margin-left: 8px;">➕ Add Photo</button>
+            </div>
+        </div>
+        
+        <div id="galleryContent">
+            <div class="loading-state"><div class="spinner"></div><p>Loading gallery...</p></div>
+        </div>
+    </div>
+    
+    <script src="js/firebase-config.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        // ===== GALLERY MANAGEMENT =====
+        let currentDocId = null;
+        let currentGallery = [];
+        let uploadWidget = null;
+        
+        async function initGalleryPage() {
+            const params = getUrlParams();
+            const docId = params.docId;
+            
+            if (!docId) {
+                // Use current user's profile
+                const emailKey = getCurrentUserEmailKey();
+                if (emailKey) {
+                    currentDocId = emailKey;
+                } else {
+                    document.getElementById('galleryContent').innerHTML = `
+                        <div class="card" style="text-align: center; padding: 20px; color: var(--error);">
+                            <p>No profile specified</p>
+                            <button class="btn btn-primary" onclick="window.history.back()">Go Back</button>
+                        </div>
+                    `;
+                    return;
+                }
+            } else {
+                currentDocId = docId;
+            }
+            
+            await loadGallery();
+            setupUploadWidget();
+        }
+        
+        async function loadGallery() {
+            const container = document.getElementById('galleryContent');
+            container.innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Loading gallery...</p></div>';
+            
+            try {
+                const doc = await db.collection('profiles').doc(currentDocId).get();
+                
+                if (!doc.exists) {
+                    container.innerHTML = `
+                        <div class="card" style="text-align: center; padding: 20px;">
+                            <div style="font-size: 48px;">📸</div>
+                            <h4>Profile Not Found</h4>
+                            <button class="btn btn-primary" onclick="window.history.back()">Go Back</button>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                const profile = doc.data();
+                currentGallery = profile.galleryImages || [];
+                document.getElementById('photoCount').textContent = `${currentGallery.length} / ${CLOUDINARY_CONFIG.maxGalleryPhotos}`;
+                
+                if (currentGallery.length === 0) {
+                    container.innerHTML = `
+                        <div class="card" style="text-align: center; padding: 40px;">
+                            <div style="font-size: 48px; margin-bottom: 8px;">🖼️</div>
+                            <h4>No Photos Yet</h4>
+                            <p style="color: var(--text-secondary);">Upload up to ${CLOUDINARY_CONFIG.maxGalleryPhotos} photos</p>
+                            <button class="btn btn-primary" onclick="document.getElementById('uploadBtn').click()" style="margin-top: 12px;">
+                                📤 Upload Photo
+                            </button>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                let html = `<div class="gallery-grid">`;
+                currentGallery.forEach((url, index) => {
+                    html += `
+                        <div class="gallery-item">
+                            <img src="${url}" alt="Gallery ${index + 1}" onerror="this.style.display='none'">
+                            <button class="delete-btn" onclick="deletePhoto('${url.replace(/'/g, "\\'")}')">✕</button>
+                        </div>
+                    `;
+                });
+                html += `</div>`;
+                container.innerHTML = html;
+            } catch (error) {
+                container.innerHTML = `
+                    <div class="card" style="text-align: center; padding: 20px; color: var(--error);">
+                        <p>Error loading gallery: ${error.message}</p>
+                        <button class="btn btn-primary" onclick="loadGallery()" style="margin-top: 8px;">Retry</button>
+                    </div>
+                `;
+            }
+        }
+        
+        // ===== CLOUDINARY UPLOAD =====
+        function setupUploadWidget() {
+            const uploadBtn = document.getElementById('uploadBtn');
+            
+            uploadBtn.addEventListener('click', function() {
+                if (currentGallery.length >= CLOUDINARY_CONFIG.maxGalleryPhotos) {
+                    showToast(`Maximum ${CLOUDINARY_CONFIG.maxGalleryPhotos} photos reached`, 'warning');
+                    return;
+                }
+                
+                // Use Cloudinary Upload Widget
+                if (!uploadWidget) {
+                    uploadWidget = cloudinary.createUploadWidget({
+                        cloudName: CLOUDINARY_CONFIG.cloudName,
+                        uploadPreset: CLOUDINARY_CONFIG.uploadPreset,
+                        folder: `${CLOUDINARY_CONFIG.folderPath}/${currentDocId}`,
+                        multiple: false,
+                        maxFiles: 1,
+                        cropping: true,
+                        croppingAspectRatio: 1,
+                        showSkipCropButton: false,
+                        publicId: `${currentDocId}_gallery_${currentGallery.length + 1}`
+                    }, (error, result) => {
+                        if (error) {
+                            console.error('Upload error:', error);
+                            showToast('Upload failed: ' + error.message, 'error');
+                            return;
+                        }
+                        
+                        if (result && result.event === 'success') {
+                            const imageUrl = result.info.secure_url;
+                            saveGalleryPhoto(imageUrl);
+                        }
+                    });
+                }
+                
+                uploadWidget.open();
+            });
+        }
+        
+        async function saveGalleryPhoto(imageUrl) {
+            try {
+                const updatedGallery = [...currentGallery, imageUrl];
+                
+                await db.collection('profiles').doc(currentDocId).update({
+                    galleryImages: updatedGallery,
+                    updatedAt: Date.now()
+                });
+                
+                showToast('✅ Photo uploaded successfully!', 'success');
+                await loadGallery();
+            } catch (error) {
+                showToast('Error saving photo: ' + error.message, 'error');
+            }
+        }
+        
+        // ===== DELETE PHOTO =====
+        async function deletePhoto(imageUrl) {
+            if (!confirm('Remove this photo from your gallery?')) return;
+            
+            try {
+                const updatedGallery = currentGallery.filter(url => url !== imageUrl);
+                
+                await db.collection('profiles').doc(currentDocId).update({
+                    galleryImages: updatedGallery,
+                    updatedAt: Date.now()
+                });
+                
+                showToast('Photo removed', 'info');
+                await loadGallery();
+            } catch (error) {
+                showToast('Error: ' + error.message, 'error');
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            if (auth.currentUser) {
+                initGalleryPage();
+            } else {
+                document.getElementById('galleryContent').innerHTML = `
+                    <div class="card" style="text-align: center; padding: 20px;">
+                        <p>Please login to manage gallery</p>
+                        <button class="btn btn-primary" onclick="window.location.href='index.html'">Login</button>
+                    </div>
+                `;
+            }
+        });
+        
+        // Expose functions
+        window.loadGallery = loadGallery;
+        window.deletePhoto = deletePhoto;
+    </script>
+</body>
+</html>

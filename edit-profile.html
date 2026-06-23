@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bandhan - Edit Profile</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+    <nav class="top-nav">
+        <div class="brand">
+            <span>बंधन</span>
+            <span style="font-weight: normal; font-size: 14px; opacity: 0.8;">Edit Profile</span>
+        </div>
+        <div class="nav-actions">
+            <button onclick="window.history.back()">←</button>
+            <button onclick="logout()">🚪</button>
+        </div>
+    </nav>
+    
+    <div class="container" style="max-width: 600px;">
+        <h2 style="text-align: center; margin-bottom: 16px;">Edit Your Profile</h2>
+        
+        <div id="editForm">
+            <div class="loading-state"><div class="spinner"></div><p>Loading profile...</p></div>
+        </div>
+    </div>
+    
+    <script src="js/firebase-config.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        async function initEditProfilePage() {
+            const user = auth.currentUser;
+            if (!user) {
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            const params = getUrlParams();
+            const docId = params.docId || getCurrentUserEmailKey();
+            
+            if (!docId) {
+                document.getElementById('editForm').innerHTML = `
+                    <div class="card" style="text-align: center; padding: 20px; color: var(--error);">
+                        <p>No profile specified</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            try {
+                const doc = await db.collection('profiles').doc(docId).get();
+                
+                if (!doc.exists) {
+                    document.getElementById('editForm').innerHTML = `
+                        <div class="card" style="text-align: center; padding: 20px;">
+                            <p>Profile not found. <a href="create-profile.html">Create one</a></p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                const profile = doc.data();
+                document.getElementById('editForm').innerHTML = createEditFormHTML(profile, docId);
+                
+            } catch (error) {
+                document.getElementById('editForm').innerHTML = `
+                    <div class="card" style="text-align: center; padding: 20px; color: var(--error);">
+                        <p>Error loading profile: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        function createEditFormHTML(profile, docId) {
+            // Get values with defaults
+            const get = (key, defaultVal = '') => profile[key] ?? defaultVal;
+            
+            // Basic
+            const gender = get('Gender');
+            const firstName = get('First Name');
+            const lastName = get('Last Name');
+            const dob = get('Date of Birth');
+            const age = get('Age', 0);
+            const height = get('Height (cm)', 0);
+            const weight = get('Weight (kg)', 0);
+            const maritalStatus = get('Marital Status', 'Never Married');
+            const motherTongue = get('Mother Tongue', 'Marathi');
+            const community = get('Community');
+            const subCommunity = get('Sub Community');
+            const city = get('City');
+            const state = get('State', 'Maharashtra');
+            
+            // Education
+            const education = get('Education');
+            const specialization = get('Specialization');
+            const college = get('College');
+            
+            // Career
+            const occupation = get('Occupation');
+            const company = get('Company');
+            const jobType = get('Job Type', 'Private');
+            const annualIncome = get('Annual Income');
+            const workLocation = get('Work Location');
+            
+            // Family
+            const familyType = get('Family Type', 'Joint');
+            const familyStatus = get('Family Status', 'Middle Class');
+            const fatherName = get('Father Name');
+            const fatherOccupation = get('Father Occupation');
+            const motherName = get('Mother Name');
+            const motherOccupation = get('Mother Occupation');
+            const brothers = get('Brothers', 0);
+            const sisters = get('Sisters', 0);
+            const nativePlace = get('Native Place');
+            
+            // Partner
+            const expectedAgeFrom = get('Expected Age From', 0);
+            const expectedAgeTo = get('Expected Age To', 0);
+            const expectedHeightFrom = get('Expected Height From (cm)', 0);
+            const expectedHeightTo = get('Expected Height To (cm)', 0);
+            const preferredEducation = (get('Preferred Education') || []).join(', ');
+            const preferredCities = (get('Preferred Cities') || []).join(', ');
+            const preferredOccupations = (get('Preferred Occupations') || []).join(', ');
+            const incomeExpectation = get('Income Expectation');
+            const acceptDivorce = get('Accept Divorce', 'No');
+            
+            // Horoscope
+            const rashi = get('Rashi');
+            const nakshatra = get('Nakshatra');
+            const mangal = get('Mangal');
+            
+            // Contact
+            const phone = get('Phone');
+            const email = get('email');
+            
+            return `
+                <div id="formContainer">
+                    <!-- Basic Details -->
+                    <div class="card">
+                        <h4 style="margin-bottom: 12px;">Basic Details</h4>
+                        ${createField('gender', 'Gender *', 'select', gender, ['', 'Male', 'Female'])}
+                        ${createField('firstName', 'First Name *', 'text', firstName)}
+                        ${createField('lastName', 'Last Name', 'text', lastName)}
+                        ${createField('dob', 'Date of Birth', 'date', dob)}
+                        ${createField('age', 'Age *', 'number', age)}
+                        ${createField('height', 'Height (cm)', 'number', height)}
+                        ${createField('weight', 'Weight (kg)', 'number', weight)}
+                        ${createField('maritalStatus', 'Marital Status', 'select', maritalStatus, ['Never Married', 'Divorced', 'Widowed', 'Separated'])}
+                        ${createField('motherTongue', 'Mother Tongue', 'select', motherTongue, ['Marathi', 'Hindi', 'English', 'Tamil', 'Telugu', 'Kannada', 'Malayalam', 'Bengali', 'Gujarati', 'Punjabi', 'Other'])}
+                        ${createField('community', 'Community *', 'text', community)}
+                        ${createField('subCommunity', 'Sub Community', 'text', subCommunity)}
+                        ${createField('city', 'City *', 'text', city)}
+                        ${createField('state', 'State', 'select', state, ['Maharashtra', 'Gujarat', 'Rajasthan', 'Uttar Pradesh', 'Tamil Nadu', 'Karnataka', 'Andhra Pradesh', 'Telangana', 'West Bengal', 'Delhi', 'Other'])}
+                    </div>
+                    
+                    <!-- Education -->
+                    <div class="card">
+                        <h4 style="margin-bottom: 12px;">Education</h4>
+                        ${createField('education', 'Highest Qualification *', 'text', education)}
+                        ${createField('specialization', 'Specialization', 'text', specialization)}
+                        ${createField('college', 'College/University', 'text', college)}
+                    </div>
+                    
+                    <!-- Career -->
+                    <div class="card">
+                        <h4 style="margin-bottom: 12px;">Career</h4>
+                        ${createField('occupation', 'Occupation *', 'text', occupation)}
+                        ${createField('company', 'Company', 'text', company)}
+                        ${createField('jobType', 'Job Type', 'select', jobType, ['Private', 'Government', 'Self Employed', 'Business', 'Freelance', 'Student', 'Not Working'])}
+                        ${createField('annualIncome', 'Annual Income (LPA)', 'text', annualIncome)}
+                        ${createField('workLocation', 'Work Location', 'text', workLocation)}
+                    </div>
+                    
+                    <!-- Family -->
+                    <div class="card">
+                        <h4 style="margin-bottom: 12px;">Family Details</h4>
+                        ${createField('familyType', 'Family Type', 'select', familyType, ['Joint', 'Nuclear'])}
+                        ${createField('familyStatus', 'Family Status', 'select', familyStatus, ['Middle Class', 'Upper Middle Class', 'Upper Class', 'Lower Middle Class'])}
+                        ${createField('fatherName', "Father's Name", 'text', fatherName)}
+                        ${createField('fatherOccupation', "Father's Occupation", 'text', fatherOccupation)}
+                        ${createField('motherName', "Mother's Name", 'text', motherName)}
+                        ${createField('motherOccupation', "Mother's Occupation", 'text', motherOccupation)}
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                            ${createField('brothers', 'Brothers', 'number', brothers)}
+                            ${createField('sisters', 'Sisters', 'number', sisters)}
+                        </div>
+                        ${createField('nativePlace', 'Native Place', 'text', nativePlace)}
+                    </div>
+                    
+                    <!-- Partner Preferences -->
+                    <div class="card">
+                        <h4 style="margin-bottom: 12px;">Partner Preferences</h4>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                            ${createField('expectedAgeFrom', 'Age From', 'number', expectedAgeFrom)}
+                            ${createField('expectedAgeTo', 'Age To', 'number', expectedAgeTo)}
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                            ${createField('expectedHeightFrom', 'Height From (cm)', 'number', expectedHeightFrom)}
+                            ${createField('expectedHeightTo', 'Height To (cm)', 'number', expectedHeightTo)}
+                        </div>
+                        ${createField('preferredEducation', 'Preferred Education (comma separated)', 'text', preferredEducation)}
+                        ${createField('preferredCities', 'Preferred Cities (comma separated)', 'text', preferredCities)}
+                        ${createField('preferredOccupations', 'Preferred Occupations (comma separated)', 'text', preferredOccupations)}
+                        ${createField('incomeExpectation', 'Income Expectation', 'text', incomeExpectation)}
+                        ${createField('acceptDivorce', 'Accept Divorce', 'select', acceptDivorce, ['No', 'Yes'])}
+                    </div>
+                    
+                    <!-- Horoscope -->
+                    <div class="card">
+                        <h4 style="margin-bottom: 12px;">Horoscope (Optional)</h4>
+                        ${createField('rashi', 'Rashi', 'text', rashi)}
+                        ${createField('nakshatra', 'Nakshatra', 'text', nakshatra)}
+                        ${createField('mangal', 'Mangal', 'text', mangal)}
+                    </div>
+                    
+                    <!-- Contact -->
+                    <div class="card">
+                        <h4 style="margin-bottom: 12px;">Contact</h4>
+                        ${createField('phone', 'Phone Number', 'tel', phone)}
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" id="email" class="form-control" value="${email}" disabled>
+                        </div>
+                    </div>
+                    
+                    <div id="formError" style="color: var(--error); font-size: 14px; margin: 12px 0; display: none;"></div>
+                    
+                    <div style="display: flex; gap: 8px; margin-top: 12px;">
+                        <button id="saveBtn" class="btn btn-primary" style="flex: 1; padding: 14px; font-size: 16px;">
+                            💾 Save Changes
+                        </button>
+                        <button class="btn btn-outline" onclick="window.history.back()" style="padding: 14px 24px;">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function createField(id, label, type, value, options = null) {
+            let input;
+            
+            if (type === 'select' && options) {
+                input = `<select id="${id}" class="form-control">`;
+                options.forEach(opt => {
+                    const selected = opt === value ? 'selected' : '';
+                    input += `<option value="${opt}" ${selected}>${opt || 'Select...'}</option>`;
+                });
+                input += `</select>`;
+            } else if (type === 'date') {
+                input = `<input type="date" id="${id}" class="form-control" value="${value || ''}">`;
+            } else {
+                input = `<input type="${type}" id="${id}" class="form-control" value="${value || ''}" placeholder="${label}">`;
+            }
+            
+            return `
+                <div class="form-group">
+                    <label for="${id}">${label}</label>
+                    ${input}
+                </div>
+            `;
+        }
+        
+        // ===== SAVE PROFILE =====
+        document.addEventListener('DOMContentLoaded', function() {
+            if (auth.currentUser) {
+                initEditProfilePage();
+                
+                // Delegate save button click
+                document.addEventListener('click', async function(e) {
+                    if (e.target.id === 'saveBtn') {
+                        await saveProfile();
+                    }
+                });
+            }
+        });
+        
+        async function saveProfile() {
+            const errorDiv = document.getElementById('formError');
+            errorDiv.style.display = 'none';
+            
+            const getVal = (id) => document.getElementById(id)?.value || '';
+            const getNum = (id) => parseInt(document.getElementById(id)?.value) || 0;
+            
+            // Basic
+            const gender = getVal('gender');
+            const firstName = getVal('firstName').trim();
+            const lastName = getVal('lastName').trim();
+            const dob = getVal('dob');
+            const age = getNum('age');
+            const height = getNum('height');
+            const weight = getNum('weight');
+            const maritalStatus = getVal('maritalStatus');
+            const motherTongue = getVal('motherTongue');
+            const community = getVal('community').trim();
+            const subCommunity = getVal('subCommunity').trim();
+            const city = getVal('city').trim();
+            const state = getVal('state');
+            
+            // Education
+            const education = getVal('education').trim();
+            const specialization = getVal('specialization').trim();
+            const college = getVal('college').trim();
+            
+            // Career
+            const occupation = getVal('occupation').trim();
+            const company = getVal('company').trim();
+            const jobType = getVal('jobType');
+            const annualIncome = getVal('annualIncome').trim();
+            const workLocation = getVal('workLocation').trim();
+            
+            // Family
+            const familyType = getVal('familyType');
+            const familyStatus = getVal('familyStatus');
+            const fatherName = getVal('fatherName').trim();
+            const fatherOccupation = getVal('fatherOccupation').trim();
+            const motherName = getVal('motherName').trim();
+            const motherOccupation = getVal('motherOccupation').trim();
+            const brothers = getNum('brothers');
+            const sisters = getNum('sisters');
+            const nativePlace = getVal('nativePlace').trim();
+            
+            // Partner
+            const expectedAgeFrom = getNum('expectedAgeFrom');
+            const expectedAgeTo = getNum('expectedAgeTo');
+            const expectedHeightFrom = getNum('expectedHeightFrom');
+            const expectedHeightTo = getNum('expectedHeightTo');
+            const preferredEducation = getVal('preferredEducation').split(',').map(s => s.trim()).filter(Boolean);
+            const preferredCities = getVal('preferredCities').split(',').map(s => s.trim()).filter(Boolean);
+            const preferredOccupations = getVal('preferredOccupations').split(',').map(s => s.trim()).filter(Boolean);
+            const incomeExpectation = getVal('incomeExpectation').trim();
+            const acceptDivorce = getVal('acceptDivorce');
+            
+            // Horoscope
+            const rashi = getVal('rashi').trim();
+            const nakshatra = getVal('nakshatra').trim();
+            const mangal = getVal('mangal').trim();
+            
+            // Contact
+            const phone = getVal('phone').trim();
+            
+            // Validation
+            if (!gender) { showError('Please select gender'); return; }
+            if (!firstName) { showError('Please enter first name'); return; }
+            if (!age || age < 18) { showError('Please enter a valid age (18+)'); return; }
+            if (!community) { showError('Please enter community'); return; }
+            if (!city) { showError('Please enter city'); return; }
+            if (!education) { showError('Please enter education'); return; }
+            if (!occupation) { showError('Please enter occupation'); return; }
+            
+            const btn = document.getElementById('saveBtn');
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+            
+            try {
+                const docId = getCurrentUserEmailKey();
+                const profileData = {
+                    'Gender': gender,
+                    'First Name': firstName,
+                    'Last Name': lastName,
+                    'Date of Birth': dob,
+                    'Age': age,
+                    'Height (cm)': height,
+                    'Weight (kg)': weight,
+                    'Marital Status': maritalStatus,
+                    'Mother Tongue': motherTongue,
+                    'Community': community,
+                    'Sub Community': subCommunity,
+                    'City': city,
+                    'State': state,
+                    'Country': 'India',
+                    'Education': education,
+                    'Specialization': specialization,
+                    'College': college,
+                    'Occupation': occupation,
+                    'Company': company,
+                    'Job Type': jobType,
+                    'Annual Income': annualIncome,
+                    'Work Location': workLocation,
+                    'Family Type': familyType,
+                    'Family Status': familyStatus,
+                    'Father Name': fatherName,
+                    'Father Occupation': fatherOccupation,
+                    'Mother Name': motherName,
+                    'Mother Occupation': motherOccupation,
+                    'Brothers': brothers,
+                    'Sisters': sisters,
+                    'Native Place': nativePlace,
+                    'Expected Age From': expectedAgeFrom,
+                    'Expected Age To': expectedAgeTo,
+                    'Expected Height From (cm)': expectedHeightFrom,
+                    'Expected Height To (cm)': expectedHeightTo,
+                    'Preferred Education': preferredEducation,
+                    'Preferred Cities': preferredCities,
+                    'Preferred Occupations': preferredOccupations,
+                    'Income Expectation': incomeExpectation,
+                    'Accept Divorce': acceptDivorce,
+                    'Rashi': rashi,
+                    'Nakshatra': nakshatra,
+                    'Mangal': mangal,
+                    'Phone': phone,
+                    'updatedAt': Date.now()
+                };
+                
+                await db.collection('profiles').doc(docId).update(profileData);
+                
+                showToast('✅ Profile updated successfully!', 'success');
+                setTimeout(() => window.history.back(), 1000);
+            } catch (error) {
+                showError(error.message || 'Failed to update profile');
+                btn.disabled = false;
+                btn.textContent = '💾 Save Changes';
+            }
+        }
+        
+        function showError(message) {
+            const errorDiv = document.getElementById('formError');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

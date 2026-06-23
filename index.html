@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TEST - Login</title>
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+    <div class="container" style="min-height: 100vh; display: flex; align-items: center; justify-content: center;">
+        <div class="card" style="max-width: 400px; width: 100%; padding: 32px;">
+            <div style="text-align: center; margin-bottom: 24px;">
+                <div style="background: var(--primary); color: white; border-radius: 12px; padding: 20px; margin-bottom: 16px;">
+                    <h1 style="font-size: 36px; margin: 0;">TEST</h1>
+                    <p style="margin: 0; opacity: 0.8;">TEST</p>
+                </div>
+            </div>
+            
+            <h2 style="text-align: center; margin-bottom: 24px;">Welcome Back</h2>
+            
+            <!-- Loading indicator -->
+            <div id="checkingSession" style="text-align: center; padding: 20px; display: none;">
+                <div class="spinner" style="margin: 0 auto;"></div>
+                <p style="margin-top: 12px; color: var(--text-secondary);">Checking session...</p>
+            </div>
+            
+            <div id="loginForm">
+                <div id="loginError" style="color: var(--error); font-size: 14px; margin-bottom: 12px; display: none;"></div>
+                
+                <div class="form-group">
+                    <label for="loginEmail">Email</label>
+                    <input type="email" id="loginEmail" class="form-control" placeholder="your@email.com">
+                </div>
+                
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" class="form-control" placeholder="Enter password">
+                </div>
+                
+                <div class="form-group" style="display: flex; align-items: center; gap: 8px;">
+                    <input type="checkbox" id="stayLoggedIn">
+                    <label for="stayLoggedIn" style="margin: 0; font-weight: normal;">Stay Logged In</label>
+                </div>
+                
+                <button id="loginBtn" class="btn btn-primary" style="width: 100%; padding: 14px; font-size: 16px;">
+                    LOGIN
+                </button>
+                
+                <p style="text-align: center; margin-top: 16px;">
+                    Don't have an account? 
+                    <a href="register.html" style="color: var(--primary); text-decoration: none; font-weight: 600;">Register Now</a>
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Load Firebase config and app -->
+    <script src="js/firebase-config.js"></script>
+    <script src="js/app.js"></script>
+    
+    <script>
+        // ============================================
+        // LOGIN PAGE INITIALIZATION
+        // ============================================
+        
+        // Override the app.js initLoginPage function
+        function initLoginPage() {
+            console.log('🔐 Initializing login page...');
+            
+            const emailInput = document.getElementById('loginEmail');
+            const passwordInput = document.getElementById('loginPassword');
+            const loginBtn = document.getElementById('loginBtn');
+            const errorDiv = document.getElementById('loginError');
+            const stayLoggedIn = document.getElementById('stayLoggedIn');
+            const checkingSession = document.getElementById('checkingSession');
+            const loginForm = document.getElementById('loginForm');
+            
+            // Check for saved session
+            const savedEmail = getSavedEmail();
+            if (savedEmail) {
+                emailInput.value = savedEmail;
+            }
+            
+            // Check if "Stay Logged In" was previously checked
+            if (localStorage.getItem('bandhan_stay_logged_in') === 'true') {
+                stayLoggedIn.checked = true;
+            }
+            
+            // If user is already authenticated, redirect
+            if (auth.currentUser) {
+                console.log('✅ User already authenticated, redirecting...');
+                initPage(); // This will handle role-based redirect
+                return;
+            }
+            
+            // Show login form
+            loginForm.style.display = 'block';
+            
+            // Login button handler
+            loginBtn.addEventListener('click', async function() {
+                const email = emailInput.value.trim();
+                const password = passwordInput.value;
+                
+                errorDiv.style.display = 'none';
+                
+                if (!email) {
+                    errorDiv.textContent = 'Please enter email';
+                    errorDiv.style.display = 'block';
+                    return;
+                }
+                if (!password) {
+                    errorDiv.textContent = 'Please enter password';
+                    errorDiv.style.display = 'block';
+                    return;
+                }
+                if (password.length < 6) {
+                    errorDiv.textContent = 'Password must be at least 6 characters';
+                    errorDiv.style.display = 'block';
+                    return;
+                }
+                
+                loginBtn.disabled = true;
+                loginBtn.textContent = 'Logging in...';
+                
+                try {
+                    const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                    const user = userCredential.user;
+                    
+                    // Save session
+                    saveSession(email, stayLoggedIn.checked);
+                    
+                    // Update last login
+                    const emailKey = emailToDocumentId(email);
+                    await db.collection('users').doc(emailKey).update({
+                        lastLogin: Date.now()
+                    });
+                    
+                    // Check user status and role
+                    const userDoc = await db.collection('users').doc(emailKey).get();
+                    if (userDoc.exists) {
+                        const userData = userDoc.data();
+                        const status = userData.accountStatus;
+                        
+                        if (status === 'INACTIVE') {
+                            await auth.signOut();
+                            clearSession();
+                            errorDiv.textContent = 'Your account has been deactivated. Please contact admin.';
+                            errorDiv.style.display = 'block';
+                            loginBtn.disabled = false;
+                            loginBtn.textContent = 'LOGIN';
+                            return;
+                        }
+                        
+                        // Redirect based on role
+                        const role = userData.role || 'USER';
+                        console.log('🎯 User role:', role);
+                        
+                        if (role === 'ADMIN') {
+                            window.location.href = 'admin.html';
+                        } else {
+                            window.location.href = 'dashboard.html';
+                        }
+                    } else {
+                        window.location.href = 'dashboard.html';
+                    }
+                } catch (error) {
+                    console.error('Login error:', error);
+                    errorDiv.textContent = error.message || 'Login failed';
+                    errorDiv.style.display = 'block';
+                    loginBtn.disabled = false;
+                    loginBtn.textContent = 'LOGIN';
+                }
+            });
+            
+            // Enter key support
+            passwordInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') loginBtn.click();
+            });
+            emailInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') passwordInput.focus();
+            });
+        }
+        
+        // Initialize login page when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            // Show checking session
+            const checkingSession = document.getElementById('checkingSession');
+            const loginForm = document.getElementById('loginForm');
+            
+            // Check if user is already logged in
+            if (auth.currentUser) {
+                console.log('✅ User already authenticated on page load');
+                checkingSession.style.display = 'block';
+                loginForm.style.display = 'none';
+                // Let the auth listener handle it
+            } else {
+                console.log('🔍 No user, showing login form');
+                checkingSession.style.display = 'none';
+                loginForm.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>

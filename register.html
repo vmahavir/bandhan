@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bandhan - Register</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+    <div class="container" style="min-height: 100vh; display: flex; align-items: center; justify-content: center;">
+        <div class="card" style="max-width: 400px; width: 100%; padding: 32px;">
+            <div style="text-align: center; margin-bottom: 24px;">
+                <h1 style="color: var(--primary); font-size: 28px;">Create Account</h1>
+            </div>
+            
+            <div id="registerError" style="color: var(--error); font-size: 14px; margin-bottom: 12px; display: none;"></div>
+            
+            <div class="form-group">
+                <label for="regName">Full Name</label>
+                <input type="text" id="regName" class="form-control" placeholder="Your full name">
+            </div>
+            
+            <div class="form-group">
+                <label for="regEmail">Email</label>
+                <input type="email" id="regEmail" class="form-control" placeholder="your@email.com">
+            </div>
+            
+            <div class="form-group">
+                <label for="regMobile">Mobile Number</label>
+                <input type="tel" id="regMobile" class="form-control" placeholder="10-digit mobile number">
+            </div>
+            
+            <div class="form-group">
+                <label for="regPassword">Password</label>
+                <input type="password" id="regPassword" class="form-control" placeholder="Minimum 6 characters">
+            </div>
+            
+            <div class="form-group">
+                <label for="regConfirmPassword">Confirm Password</label>
+                <input type="password" id="regConfirmPassword" class="form-control" placeholder="Re-enter password">
+            </div>
+            
+            <button id="registerBtn" class="btn btn-primary" style="width: 100%; padding: 14px; font-size: 16px;">
+                REGISTER
+            </button>
+            
+            <p style="text-align: center; margin-top: 16px;">
+                Already have an account? 
+                <a href="index.html" style="color: var(--primary); text-decoration: none; font-weight: 600;">Login</a>
+            </p>
+        </div>
+    </div>
+    
+    <script src="js/firebase-config.js"></script>
+	<script>
+    // Helper function
+    function emailToDocumentId(email) {
+        if (!email) return '';
+        return email
+            .replace(/[@.]/g, '_')
+            .toLowerCase();
+    }
+</script>
+    <script src="js/app.js"></script>
+    <script>
+        function initRegisterPage() {
+            const nameInput = document.getElementById('regName');
+            const emailInput = document.getElementById('regEmail');
+            const mobileInput = document.getElementById('regMobile');
+            const passwordInput = document.getElementById('regPassword');
+            const confirmInput = document.getElementById('regConfirmPassword');
+            const registerBtn = document.getElementById('registerBtn');
+            const errorDiv = document.getElementById('registerError');
+            
+            registerBtn.addEventListener('click', async function() {
+                const name = nameInput.value.trim();
+                const email = emailInput.value.trim();
+                const mobile = mobileInput.value.trim();
+                const password = passwordInput.value;
+                const confirm = confirmInput.value;
+                
+                errorDiv.style.display = 'none';
+                
+                if (!name) {
+                    errorDiv.textContent = 'Please enter your name';
+                    errorDiv.style.display = 'block';
+                    return;
+                }
+                if (!email) {
+                    errorDiv.textContent = 'Please enter email';
+                    errorDiv.style.display = 'block';
+                    return;
+                }
+                if (!mobile || mobile.length < 10) {
+                    errorDiv.textContent = 'Please enter a valid 10-digit mobile number';
+                    errorDiv.style.display = 'block';
+                    return;
+                }
+                if (!password || password.length < 6) {
+                    errorDiv.textContent = 'Password must be at least 6 characters';
+                    errorDiv.style.display = 'block';
+                    return;
+                }
+                if (password !== confirm) {
+                    errorDiv.textContent = 'Passwords do not match';
+                    errorDiv.style.display = 'block';
+                    return;
+                }
+                
+                registerBtn.disabled = true;
+                registerBtn.textContent = 'Creating account...';
+                
+                try {
+                    const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                    const user = userCredential.user;
+                    
+                    // Create user document
+                    const emailKey = emailToDocumentId(email);
+                    await db.collection('users').doc(emailKey).set({
+                        email: email,
+                        name: name,
+                        mobile: mobile,
+                        role: 'USER',
+                        accountStatus: 'ACTIVE',
+                        hasProfile: false,
+                        createdAt: Date.now(),
+                        lastLogin: Date.now()
+                    });
+                    
+                    showToast('Account created successfully!', 'success');
+                    window.location.href = 'dashboard.html';
+                } catch (error) {
+                    errorDiv.textContent = error.message || 'Registration failed';
+                    errorDiv.style.display = 'block';
+                    registerBtn.disabled = false;
+                    registerBtn.textContent = 'REGISTER';
+                }
+            });
+        }
+    </script>
+</body>
+</html>
